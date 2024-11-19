@@ -1,0 +1,9 @@
+{
+  "Records": [
+    {
+      "Sns": {
+        "Message": "{\"email\":\"no@gmail.com\", \"userId\":\"user123\"}"
+      }
+    }
+  ]
+}
