@@ -12,6 +12,7 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.693.0",
     "@aws-sdk/client-s3": "^3.693.0",
+    "@aws-sdk/client-secrets-manager": "^3.699.0",
     "@aws-sdk/client-sns": "^3.693.0",
     "@sendgrid/mail": "^8.1.4",
     "aws-sdk": "^2.1206.0",
