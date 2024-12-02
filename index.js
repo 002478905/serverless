@@ -1,34 +1,34 @@
 import sgMail from "@sendgrid/mail";
 import { Sequelize, DataTypes } from "sequelize";
 import crypto from "crypto";
+import {
+  SecretsManagerClient,
+  GetSecretValueCommand,
+} from "@aws-sdk/client-secrets-manager";
+const secretsManager = new SecretsManagerClient({ region: "us-east-1" });
 
-// const sequelize = new Sequelize(
-//   process.env.DB_NAME,
-//   process.env.DB_USER,
-//   process.env.DB_PASSWORD,
-//   {
-//     host: process.env.DB_HOST,
-//     dialect: "postgres",
-//   }
-// );
-
-// const VerificationToken = sequelize.define("VerificationToken", {
-//   userId: {
-//     type: DataTypes.UUID,
-//     allowNull: false,
-//   },
-//   token: {
-//     type: DataTypes.STRING,
-//     allowNull: false,
-//   },
-//   expiresAt: {
-//     type: DataTypes.DATE,
-//     allowNull: false,
-//   },
-// });
-
+const sendgrid = await secretsManager.send(
+  new GetSecretValueCommand({
+    SecretId: "sendgrid-api-key",
+    VersionStage: "AWSCURRENT",
+  })
+);
+const domain = await secretsManager.send(
+  new GetSecretValueCommand({
+    SecretId: "domain_name",
+    VersionStage: "AWSCURRENT",
+  })
+);
 export const handler = async (event) => {
   try {
+    const sendgridApiKey = sendgrid.SecretString;
+    // Retrieve secret value from AWS Secrets Manager
+    // const secretData = await secretsManager
+    //   .getSecretValue({ SecretId: "domain_name" })
+    //   .promise();
+
+    const domainName = JSON.parse(domain.SecretString).DOMAIN;
+
     const message = JSON.parse(event.Records[0].Sns.Message);
     const { email, userId } = message;
 
@@ -36,7 +36,12 @@ export const handler = async (event) => {
     const expirationTime = Date.now() + 2 * 60 * 1000; // 2 minutes
 
     // await storeVerificationDetails(userId, verificationToken, expirationTime);
-    await sendVerificationEmail(email, verificationToken);
+    await sendVerificationEmail(
+      email,
+      verificationToken,
+      sendgridApiKey,
+      domainName
+    );
 
     return { statusCode: 200, body: "Verification email sent" };
   } catch (error) {
@@ -63,10 +68,10 @@ async function storeVerificationDetails(userId, token, expiration) {
   }
 }
 
-async function sendVerificationEmail(email, token) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-  const verificationLink = `http://${process.env.VERIFICATION_BASE_URL}/v1/user/verify?token=${token}`;
+async function sendVerificationEmail(email, token, apiKey, domainName) {
+  //sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  sgMail.setApiKey(apiKey);
+  const verificationLink = `https://${domainName}/v1/user/verify?token=${token}`;
 
   const msg = {
     to: email,
